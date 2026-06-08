@@ -1,0 +1,6 @@
+{
+  "name": "Movie Pro",
+  "description": "Premium High-Fidelity Movies and Series streaming platform with automatic adaptive video Player & Room caching.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
