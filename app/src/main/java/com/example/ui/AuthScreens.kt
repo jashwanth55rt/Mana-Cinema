@@ -121,10 +121,10 @@ fun AuthScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Elegant Branded Movie Pro Header
+            // Elegant Branded Mana Cinema Header
             Image(
-                painter = painterResource(id = com.example.R.drawable.ic_movie_pro_logo),
-                contentDescription = "Movie Pro Logo",
+                painter = painterResource(id = com.example.R.drawable.img_mana_cinema_logo_1780913161037),
+                contentDescription = "Mana Cinema Logo",
                 modifier = Modifier
                     .size(120.dp)
                     .padding(bottom = 12.dp)
@@ -137,13 +137,13 @@ fun AuthScreen(
                 modifier = Modifier.padding(bottom = 6.dp)
             ) {
                 Text(
-                    text = "MOVIE",
+                    text = "MANA ",
                     color = Color.White,
                     fontSize = 34.sp,
                     fontWeight = FontWeight.Black
                 )
                 Text(
-                    text = "PRO",
+                    text = "CINEMA",
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 34.sp,
                     fontWeight = FontWeight.Black

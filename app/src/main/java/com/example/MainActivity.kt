@@ -7,14 +7,18 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -188,28 +192,37 @@ fun SplashScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                // Render the generated custom Mana Cinema logo
+                Image(
+                    painter = painterResource(id = com.example.R.drawable.img_mana_cinema_logo_1780913161037),
+                    contentDescription = "Mana Cinema Logo",
+                    modifier = Modifier
+                        .size(160.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                )
+                Spacer(modifier = Modifier.height(24.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "MOVIE",
+                        text = "MANA ",
                         color = Color.White,
-                        fontSize = 42.sp,
+                        fontSize = 38.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "HUNT",
+                        text = "CINEMA",
                         color = MaterialTheme.colorScheme.primary,
-                        fontSize = 42.sp,
+                        fontSize = 38.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 1.sp
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                     text = "Cinematic Streaming Experience",
+                     text = "Movies • Series • Entertainment",
                      color = Color.LightGray.copy(alpha = 0.7f),
                      fontSize = 14.sp,
                      fontWeight = FontWeight.Medium,

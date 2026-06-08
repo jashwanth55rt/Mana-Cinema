@@ -126,8 +126,8 @@ fun MainAppContainer(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text("MOVIE", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Black)
-                    Text("HUNT", color = MaterialTheme.colorScheme.primary, fontSize = 38.sp, fontWeight = FontWeight.Black)
+                    Text("MANA ", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Black)
+                    Text("CINEMA", color = MaterialTheme.colorScheme.primary, fontSize = 38.sp, fontWeight = FontWeight.Black)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -467,8 +467,8 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row {
-                    Text("MOVIE", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                    Text("HUNT", color = MaterialTheme.colorScheme.primary, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                    Text("MANA ", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                    Text("CINEMA", color = MaterialTheme.colorScheme.primary, fontSize = 24.sp, fontWeight = FontWeight.Black)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     IconButton(onClick = onSearchClick) {
@@ -2671,11 +2671,12 @@ fun ProfileSelectionScreen(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
         ) {
             Image(
-                painter = painterResource(id = com.example.R.drawable.ic_movie_pro_logo),
-                contentDescription = "Movie Pro Logo",
+                painter = painterResource(id = com.example.R.drawable.img_mana_cinema_logo_1780913161037),
+                contentDescription = "Mana Cinema Logo",
                 modifier = Modifier
                     .size(110.dp)
                     .padding(bottom = 12.dp)
+                    .clip(RoundedCornerShape(16.dp))
                     .testTag("app_logo_image")
             )
 
@@ -2683,8 +2684,8 @@ fun ProfileSelectionScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Text("MOVIE", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Black)
-                Text("pro", color = MaterialTheme.colorScheme.primary, fontSize = 28.sp, fontWeight = FontWeight.Black)
+                Text("MANA ", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Black)
+                Text("CINEMA", color = MaterialTheme.colorScheme.primary, fontSize = 28.sp, fontWeight = FontWeight.Black)
             }
 
             Spacer(modifier = Modifier.height(36.dp))
