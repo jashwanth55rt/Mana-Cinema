@@ -61,11 +61,17 @@ interface AppDao {
     @Query("SELECT * FROM cached_movies")
     fun getAllMovies(): Flow<List<CachedMovieEntity>>
 
+    @Query("DELETE FROM cached_movies")
+    suspend fun clearMovies()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<CachedMovieEntity>)
 
     @Query("SELECT * FROM cached_series")
     fun getAllSeries(): Flow<List<CachedSeriesEntity>>
+
+    @Query("DELETE FROM cached_series")
+    suspend fun clearSeries()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSeries(series: List<CachedSeriesEntity>)

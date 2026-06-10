@@ -116,6 +116,7 @@ fun WebVideoPlayerView(
 
         try {
             activity?.window?.let { window ->
+                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 insetsController.hide(WindowInsetsCompat.Type.systemBars())
@@ -128,6 +129,7 @@ fun WebVideoPlayerView(
             try {
                 activity?.requestedOrientation = originalOrientation
                 activity?.window?.let { window ->
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                     insetsController.show(WindowInsetsCompat.Type.systemBars())
                 }
@@ -266,6 +268,7 @@ fun NativeVideoPlayerView(
         try {
             // Hide status and navigation bars for immersive full screen
             activity?.window?.let { window ->
+                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 insetsController.hide(WindowInsetsCompat.Type.systemBars())
@@ -279,6 +282,7 @@ fun NativeVideoPlayerView(
                 // Restore orientation and system bars
                 activity?.requestedOrientation = originalOrientation
                 activity?.window?.let { window ->
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                     insetsController.show(WindowInsetsCompat.Type.systemBars())
                 }

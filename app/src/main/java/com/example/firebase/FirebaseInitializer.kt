@@ -9,12 +9,12 @@ object FirebaseInitializer {
         try {
             if (FirebaseApp.getApps(context).isEmpty()) {
                 val options = FirebaseOptions.Builder()
-                    .setApiKey("AIzaSyB6nptlXvEtBK9JA28kmaipKogE284TkAc")
-                    .setApplicationId("1:991323524559:web:e518c938c79eb0d1ac56ba")
-                    .setDatabaseUrl("https://infinity-movies-fa1f2-default-rtdb.firebaseio.com")
-                    .setProjectId("infinity-movies-fa1f2")
-                    .setStorageBucket("infinity-movies-fa1f2.firebasestorage.app")
-                    .setGcmSenderId("991323524559")
+                    .setApiKey("AIzaSyBPZpmk0nI7yerXVjwA9y0JoTTMuOzjGqs")
+                    .setApplicationId("1:1078257806666:web:82bac133b65ffc9e3625b3")
+                    .setDatabaseUrl("https://new-moviehunt-default-rtdb.firebaseio.com")
+                    .setProjectId("new-moviehunt")
+                    .setStorageBucket("new-moviehunt.firebasestorage.app")
+                    .setGcmSenderId("1078257806666")
                     .build()
                 FirebaseApp.initializeApp(context, options)
             }

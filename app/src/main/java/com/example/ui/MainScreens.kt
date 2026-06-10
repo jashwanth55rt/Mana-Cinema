@@ -20,6 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -428,6 +432,7 @@ fun BottomNavigationBar(
 }
 
 // ------------------ PRIMARY HOMESCREEN ------------------
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
     viewModel: MovieViewModel,
@@ -442,8 +447,14 @@ fun HomeScreen(
     val notifications by viewModel.notifications.collectAsState()
     val recommendedMovies by viewModel.recommendedMovies.collectAsState()
     val activeProfile by viewModel.activeProfile.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     var activeMovieIndex by remember { mutableIntStateOf(0) }
+
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = { viewModel.refreshData() }
+    )
 
     // Start auto-scroll banner timer
     LaunchedEffect(movies) {
@@ -453,11 +464,12 @@ fun HomeScreen(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp)
-    ) {
-        // Toolbar Top
+    Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp)
+        ) {
+            // Toolbar Top
         item {
             Row(
                 modifier = Modifier
@@ -739,6 +751,15 @@ fun HomeScreen(
                 )
             }
         }
+    }
+
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        )
     }
 }
 

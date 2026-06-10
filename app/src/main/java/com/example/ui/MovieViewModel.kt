@@ -75,130 +75,57 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // High quality default fallback datasets to ensure 100% full functionality offline/empty-db
-    private val defaultMovies = listOf(
-        Movie(
-            id = "movie_bunny",
-            title = "Big Buck Bunny",
-            poster = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400",
-            backdrop = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200",
-            category = "Featured",
-            rating = "8.5",
-            year = "2024",
-            genre = "Animation, Comedy, Family",
-            link = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            stars = "Bunny, Squirrel, Chinchilla",
-            director = "Sacha Goedegebure",
-            storyline = "A large and lovable rabbit deals with harassing woodland creatures in a humorous manner."
-        ),
-        Movie(
-            id = "movie_sintel",
-            title = "Sintel Quest",
-            poster = "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=400",
-            backdrop = "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=1200",
-            category = "Action",
-            rating = "8.8",
-            year = "2023",
-            genre = "Animation, Adventure, Fantasy",
-            link = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-            stars = "Sintel, Scales the Dragon",
-            director = "Colin Levy",
-            storyline = "Sintel, a lonely young woman, searches for a baby dragon she befriended and named Scales. After he is stolen by an adult dragon, Sintel embarks on a long, arduous journey."
-        ),
-        Movie(
-            id = "movie_tears",
-            title = "Tears of Steel",
-            poster = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=400",
-            backdrop = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200",
-            category = "Sci-Fi",
-            rating = "8.2",
-            year = "2025",
-            genre = "Sci-Fi, Action, Thriller",
-            link = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-            stars = "Derek de Lint, Sergio Hasselbaink",
-            director = "Ian Hubert",
-            storyline = "In a dystopian cyberpunk city, a team of combat technicians enters a computer-simulated reality to stop rogue giant robots from altering critical human history."
-        ),
-        Movie(
-            id = "movie_elephant",
-            title = "Elephant's Dream",
-            poster = "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=400",
-            backdrop = "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=1200",
-            category = "Mystery",
-            rating = "7.9",
-            year = "2022",
-            genre = "Animation, Drama, Surreal",
-            link = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-            stars = "Tygo Gernandt, Cas Jansen",
-            director = "Bassam Kurdali",
-            storyline = "Two characters explore a strange, giant machine of uncertain purpose, uncovering bizarre, dream-like projections from their own inner psyches."
-        )
-    )
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    private val defaultWebSeries = listOf(
-        WebSeries(
-            id = "ws_cosmos",
-            title = "Science & Cosmos: Space Journey",
-            poster = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=400",
-            backdrop = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200",
-            category = "Sci-Fi",
-            rating = "9.2",
-            year = "2025",
-            genre = "Sci-Fi, Documentary",
-            storyline = "An immersive journey into the depths of our galaxy, uncovering distant planets, celestial anomalies, and the future of human interstellar travel.",
-            episodes = listOf(
-                Episode(1, 1, "The Cosmic Shore", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"),
-                Episode(1, 2, "First Contact & Horizons", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"),
-                Episode(1, 3, "Interstellar Winds", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4")
-            )
-        ),
-        WebSeries(
-            id = "ws_cyber",
-            title = "The Neon Cyber Sentry",
-            poster = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400",
-            backdrop = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200",
-            category = "Action",
-            rating = "8.7",
-            year = "2026",
-            genre = "Thriller, Cyberpunk, Action",
-            storyline = "In a neon-drenched futuristic metropolis, a cybernetic enforcement agent uncovers a vast digital conspiracy threatening the physical world.",
-            episodes = listOf(
-                Episode(1, 1, "System Breach", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"),
-                Episode(1, 2, "Neopunk Streets", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4")
-            )
-        )
-    )
+    fun refreshData() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            
+            // Guarantee refresh state is cleared even if network fails
+            launch {
+                kotlinx.coroutines.delay(4000)
+                _isRefreshing.value = false
+            }
 
-    private val defaultLiveChannels = listOf(
-        LiveTvChannel(
-            id = "chan_news",
-            name = "Global News 24/7",
-            logoUrl = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=150",
-            streamUrl = "https://playertest.longtailvideo.com/adaptive/all/playlist.m3u8",
-            category = "News"
-        ),
-        LiveTvChannel(
-            id = "chan_wild",
-            name = "Wildlife Planet HD",
-            logoUrl = "https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?q=80&w=150",
-            streamUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            category = "Documentary"
-        ),
-        LiveTvChannel(
-            id = "chan_cine",
-            name = "Retro Cinema Stream",
-            logoUrl = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=150",
-            streamUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-            category = "Movies"
-        ),
-        LiveTvChannel(
-            id = "chan_action",
-            name = "Speed Racing Live TV",
-            logoUrl = "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=150",
-            streamUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-            category = "Sports"
-        )
-    )
+            launch {
+                repository.getMoviesFromFirebase()
+                    .catch { android.util.Log.e("MovieViewModel", "Refresh movies failed", it) }
+                    .take(1)
+                    .collect { list ->
+                        _movies.value = list
+                        updateCategories(list)
+                        repository.saveMoviesToLocal(list)
+                        _isRefreshing.value = false
+                    }
+            }
+
+            launch {
+                repository.getWebSeriesFromFirebase()
+                    .catch { android.util.Log.e("MovieViewModel", "Refresh series failed", it) }
+                    .take(1)
+                    .collect { list ->
+                        _webSeries.value = list
+                        repository.saveSeriesToLocal(list)
+                    }
+            }
+            
+            launch {
+                repository.getLiveTvChannelsFromFirebase()
+                    .catch { android.util.Log.e("MovieViewModel", "Refresh channels failed", it) }
+                    .take(1)
+                    .collect { list ->
+                        _liveTvChannels.value = list
+                    }
+            }
+        }
+    }
+
+    // Removed fake data list defaultMovies
+
+    // Removed fake data list defaultWebSeries
+
+    // Removed fake data list defaultLiveChannels
 
     init {
         // Safeguard initialization of Firebase
@@ -362,25 +289,17 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
-            // Fetch Live Database content securely with fallback seeding if remote is empty
+            // Fetch Live Database content securely without fallback seeding if remote is empty
             launch {
                 repository.getMoviesFromFirebase()
                     .catch { e ->
-                        android.util.Log.e("MovieViewModel", "Movies Firebase fetch failed, using fallbacks", e)
+                        android.util.Log.e("MovieViewModel", "Movies Firebase fetch failed", e)
                         emit(emptyList())
                     }
                     .collect { list ->
-                        if (list.isNotEmpty()) {
-                            _movies.value = list
-                            updateCategories(list)
-                            repository.saveMoviesToLocal(list)
-                        } else {
-                            if (_movies.value.isEmpty()) {
-                                _movies.value = defaultMovies
-                                updateCategories(defaultMovies)
-                                repository.saveMoviesToLocal(defaultMovies)
-                            }
-                        }
+                        _movies.value = list
+                        updateCategories(list)
+                        repository.saveMoviesToLocal(list)
                         _isLoading.value = false
                     }
             }
@@ -388,36 +307,23 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
             launch {
                 repository.getWebSeriesFromFirebase()
                     .catch { e ->
-                        android.util.Log.e("MovieViewModel", "WebSeries Firebase fetch failed, using fallbacks", e)
+                        android.util.Log.e("MovieViewModel", "WebSeries Firebase fetch failed", e)
                         emit(emptyList())
                     }
                     .collect { list ->
-                        if (list.isNotEmpty()) {
-                            _webSeries.value = list
-                            repository.saveSeriesToLocal(list)
-                        } else {
-                            if (_webSeries.value.isEmpty()) {
-                                _webSeries.value = defaultWebSeries
-                                repository.saveSeriesToLocal(defaultWebSeries)
-                            }
-                        }
+                        _webSeries.value = list
+                        repository.saveSeriesToLocal(list)
                     }
             }
 
             launch {
                 repository.getLiveTvChannelsFromFirebase()
                     .catch { e ->
-                        android.util.Log.e("MovieViewModel", "Channels Firebase fetch failed, using fallbacks", e)
+                        android.util.Log.e("MovieViewModel", "Channels Firebase fetch failed", e)
                         emit(emptyList())
                     }
                     .collect { list ->
-                        if (list.isNotEmpty()) {
-                            _liveTvChannels.value = list
-                        } else {
-                            if (_liveTvChannels.value.isEmpty()) {
-                                _liveTvChannels.value = defaultLiveChannels
-                            }
-                        }
+                        _liveTvChannels.value = list
                     }
             }
 
@@ -428,9 +334,7 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
                         emit(emptyList())
                     }
                     .collect { list ->
-                        if (list.isNotEmpty()) {
-                            _notifications.value = list
-                        }
+                        _notifications.value = list
                     }
             }
         }

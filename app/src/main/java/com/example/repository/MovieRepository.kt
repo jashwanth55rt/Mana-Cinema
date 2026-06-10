@@ -18,7 +18,7 @@ class MovieRepository(context: Context) {
 
     private val dbInstance: FirebaseDatabase? by lazy {
         try {
-            FirebaseDatabase.getInstance("https://infinity-movies-fa1f2-default-rtdb.firebaseio.com")
+            FirebaseDatabase.getInstance("https://new-moviehunt-default-rtdb.firebaseio.com")
         } catch (e: Exception) {
             android.util.Log.e("MovieRepository", "FirebaseDatabase initialization failed", e)
             null
@@ -287,6 +287,7 @@ class MovieRepository(context: Context) {
                 storyline = it.storyline
             )
         }
+        appDao.clearMovies()
         appDao.insertMovies(entities)
     }
 
@@ -314,6 +315,7 @@ class MovieRepository(context: Context) {
                 episodesJson = arr.toString()
             )
         }
+        appDao.clearSeries()
         appDao.insertSeries(entities)
     }
 
