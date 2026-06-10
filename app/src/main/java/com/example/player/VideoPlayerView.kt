@@ -74,7 +74,9 @@ fun VideoPlayerView(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (isWebEmbedUrl(videoUrl)) {
+    var forceWebPlayer by remember { mutableStateOf(false) }
+
+    if (isWebEmbedUrl(videoUrl) || forceWebPlayer) {
         WebVideoPlayerView(
             videoUrl = videoUrl,
             onBackClick = onBackClick,
@@ -86,6 +88,9 @@ fun VideoPlayerView(
             initialProgress = initialProgress,
             onProgressUpdate = onProgressUpdate,
             onBackClick = onBackClick,
+            onFallbackToWeb = {
+                forceWebPlayer = true
+            },
             modifier = modifier
         )
     }
@@ -238,6 +243,24 @@ fun WebVideoPlayerView(
     }
 }
 
+private fun trustAllHostsAndCertificates() {
+    try {
+        val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+            object : javax.net.ssl.X509TrustManager {
+                override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = emptyArray()
+                override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+            }
+        )
+        val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+        sc.init(null, trustAllCerts, java.security.SecureRandom())
+        javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(sc.socketFactory)
+        javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier { _, _ -> true }
+    } catch (e: Exception) {
+        android.util.Log.e("VideoPlayerView", "Error configuring trust-all SSL certificate", e)
+    }
+}
+
 @OptIn(UnstableApi::class)
 @Composable
 fun NativeVideoPlayerView(
@@ -245,12 +268,15 @@ fun NativeVideoPlayerView(
     initialProgress: Float = 0f,
     onProgressUpdate: (Float) -> Unit = {},
     onBackClick: () -> Unit,
+    onFallbackToWeb: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var orientationMode by remember { mutableStateOf(OrientationMode.SENSOR) }
     val activity = remember(context) { context.findActivity() }
+
+    var showFallbackDialog by remember { mutableStateOf(false) }
 
     // Reactively update orientation based on user selection
     LaunchedEffect(orientationMode) {
@@ -301,6 +327,7 @@ fun NativeVideoPlayerView(
 
     // Initialize ExoPlayer
     val exoPlayer = remember {
+        trustAllHostsAndCertificates()
         val defaultHttpDataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
             .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
             .setAllowCrossProtocolRedirects(true)
@@ -318,6 +345,7 @@ fun NativeVideoPlayerView(
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                     android.util.Log.e("VideoPlayerView", "ExoPlayer Error: ${error.message}", error)
                     android.widget.Toast.makeText(context, "Playback error: ${error.message}", android.widget.Toast.LENGTH_LONG).show()
+                    showFallbackDialog = true
                 }
             })
         }
@@ -331,11 +359,25 @@ fun NativeVideoPlayerView(
         if (videoUrl.isNotBlank()) {
             try {
                 val mediaItemBuilder = MediaItem.Builder().setUri(videoUrl)
-                val lowerUrl = videoUrl.lowercase()
-                if (lowerUrl.contains(".m3u8") || lowerUrl.contains("/m3u8")) {
-                    mediaItemBuilder.setMimeType(androidx.media3.common.MimeTypes.APPLICATION_M3U8)
-                } else if (lowerUrl.contains(".mpd") || lowerUrl.contains("/mpd")) {
-                    mediaItemBuilder.setMimeType(androidx.media3.common.MimeTypes.APPLICATION_MPD)
+                val lowerUrl = videoUrl.lowercase().trim()
+                
+                // Explicitly set MIME types based on extension structure to bypass incorrect application/octet-stream content headers
+                val mimeType = when {
+                    lowerUrl.contains(".m3u8") || lowerUrl.contains("/m3u8") || lowerUrl.contains(".m3u") -> "application/x-mpegURL"
+                    lowerUrl.contains(".mpd") || lowerUrl.contains("/mpd") -> "application/dash+xml"
+                    lowerUrl.contains(".ism") || lowerUrl.contains("/manifest") -> "application/vnd.ms-sstr+xml"
+                    lowerUrl.contains(".mp4") || lowerUrl.contains("/mp4") -> "video/mp4"
+                    lowerUrl.contains(".mkv") || lowerUrl.contains("/mkv") -> "video/x-matroska"
+                    lowerUrl.contains(".webm") || lowerUrl.contains("/webm") -> "video/webm"
+                    lowerUrl.contains(".ts") || lowerUrl.contains("/ts") || lowerUrl.contains(".mpegts") -> "video/mp2t"
+                    lowerUrl.contains(".flv") || lowerUrl.contains("/flv") -> "video/x-flv"
+                    lowerUrl.contains(".mov") || lowerUrl.contains("/mov") -> "video/quicktime"
+                    lowerUrl.contains(".3gp") || lowerUrl.contains("/3gp") -> "video/3gpp"
+                    lowerUrl.contains(".avi") || lowerUrl.contains("/avi") -> "video/x-msvideo"
+                    else -> null
+                }
+                if (mimeType != null) {
+                    mediaItemBuilder.setMimeType(mimeType)
                 }
                 
                 val mediaItem = mediaItemBuilder.build()
@@ -490,6 +532,30 @@ fun NativeVideoPlayerView(
                 }
             }
 
+            // Modern Web Player Switcher pill
+            Row(
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(24.dp))
+                    .clickable { onFallbackToWeb() }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.List,
+                    contentDescription = "Switch to Web Player",
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Web Player",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+
             // Modern orientation selector pill
             Row(
                 modifier = Modifier
@@ -567,6 +633,29 @@ fun NativeVideoPlayerView(
                 confirmButton = {
                     TextButton(onClick = { showAudioDialog = false }) {
                         Text("Close")
+                    }
+                }
+            )
+        }
+
+        if (showFallbackDialog) {
+            AlertDialog(
+                onDismissRequest = { showFallbackDialog = false },
+                title = { Text("Playback Error") },
+                text = { Text("The native player had a problem playing this format/source. Would you like to switch to the alternative Web Player?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showFallbackDialog = false
+                            onFallbackToWeb()
+                        }
+                    ) {
+                        Text("Switch to Web Player")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showFallbackDialog = false }) {
+                        Text("Cancel")
                     }
                 }
             )
