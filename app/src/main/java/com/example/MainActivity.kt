@@ -3,6 +3,7 @@ package com.example
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import com.example.ui.OnboardingScreen
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.*
@@ -103,6 +104,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     var showSplash by remember { mutableStateOf(true) }
+                    var hasCompletedOnboarding by remember {
+                        mutableStateOf(sharedPrefs.getBoolean("has_completed_onboarding", false))
+                    }
 
                     LaunchedEffect(Unit) {
                         kotlinx.coroutines.delay(1800)
@@ -111,6 +115,13 @@ class MainActivity : ComponentActivity() {
 
                     if (showSplash) {
                         SplashScreen()
+                    } else if (!hasCompletedOnboarding) {
+                        OnboardingScreen(
+                            onFinished = {
+                                sharedPrefs.edit().putBoolean("has_completed_onboarding", true).apply()
+                                hasCompletedOnboarding = true
+                            }
+                        )
                     } else {
                         var authStateChangedTrigger by remember { mutableStateOf(0) }
                         var isAuthenticated by remember(authStateChangedTrigger) {
