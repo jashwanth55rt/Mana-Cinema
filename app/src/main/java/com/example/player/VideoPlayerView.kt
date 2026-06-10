@@ -14,9 +14,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -292,32 +296,66 @@ fun NativeVideoPlayerView(
         }
     }
 
+    // Initialize TrackSelector
+    val trackSelector = remember { androidx.media3.exoplayer.trackselection.DefaultTrackSelector(context) }
+
     // Initialize ExoPlayer
     val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
+        val defaultHttpDataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
+            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
+            .setAllowCrossProtocolRedirects(true)
+        val dataSourceFactory = androidx.media3.datasource.DefaultDataSource.Factory(context, defaultHttpDataSourceFactory)
+        
+        val renderersFactory = androidx.media3.exoplayer.DefaultRenderersFactory(context)
+            .setExtensionRendererMode(androidx.media3.exoplayer.DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+
+        ExoPlayer.Builder(context, renderersFactory)
+            .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory))
+            .setTrackSelector(trackSelector)
+            .build().apply {
             playWhenReady = true
+            addListener(object : Player.Listener {
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    android.util.Log.e("VideoPlayerView", "ExoPlayer Error: ${error.message}", error)
+                    android.widget.Toast.makeText(context, "Playback error: ${error.message}", android.widget.Toast.LENGTH_LONG).show()
+                }
+            })
         }
     }
+
+    var audioTrackGroups by remember { mutableStateOf<List<androidx.media3.common.Tracks.Group>>(emptyList()) }
+    var showAudioDialog by remember { mutableStateOf(false) }
 
     // Set up play sources
     LaunchedEffect(videoUrl) {
         if (videoUrl.isNotBlank()) {
             try {
-                val mediaItem = MediaItem.fromUri(videoUrl)
+                val mediaItemBuilder = MediaItem.Builder().setUri(videoUrl)
+                val lowerUrl = videoUrl.lowercase()
+                if (lowerUrl.contains(".m3u8") || lowerUrl.contains("/m3u8")) {
+                    mediaItemBuilder.setMimeType(androidx.media3.common.MimeTypes.APPLICATION_M3U8)
+                } else if (lowerUrl.contains(".mpd") || lowerUrl.contains("/mpd")) {
+                    mediaItemBuilder.setMimeType(androidx.media3.common.MimeTypes.APPLICATION_MPD)
+                }
+                
+                val mediaItem = mediaItemBuilder.build()
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
-                if (initialProgress > 0f) {
-                    exoPlayer.addListener(object : Player.Listener {
-                        override fun onPlaybackStateChanged(playbackState: Int) {
-                            if (playbackState == Player.STATE_READY) {
-                                val duration = exoPlayer.duration
-                                if (duration > 0) {
-                                    exoPlayer.seekTo((duration * initialProgress).toLong())
-                                }
+                
+                exoPlayer.addListener(object : Player.Listener {
+                    override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                        audioTrackGroups = tracks.groups.filter { it.type == androidx.media3.common.C.TRACK_TYPE_AUDIO }
+                    }
+                    
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        if (playbackState == Player.STATE_READY && initialProgress > 0f) {
+                            val duration = exoPlayer.duration
+                            if (duration > 0) {
+                                exoPlayer.seekTo((duration * initialProgress).toLong())
                             }
                         }
-                    })
-                }
+                    }
+                })
             } catch (e: Exception) {
                 android.util.Log.e("VideoPlayerView", "Error playing media item", e)
             }
@@ -424,6 +462,34 @@ fun NativeVideoPlayerView(
             )
             Spacer(modifier = Modifier.weight(1f))
 
+            if (audioTrackGroups.isNotEmpty()) {
+                val hasMultipleTracks = audioTrackGroups.sumOf { it.length } > 1
+                if (hasMultipleTracks) {
+                    Row(
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(24.dp))
+                            .clickable { showAudioDialog = true }
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.List,
+                            contentDescription = "Audio Track",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Audio",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+            }
+
             // Modern orientation selector pill
             Row(
                 modifier = Modifier
@@ -456,6 +522,54 @@ fun NativeVideoPlayerView(
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                 )
             }
+        }
+
+        if (showAudioDialog) {
+            AlertDialog(
+                onDismissRequest = { showAudioDialog = false },
+                title = { Text("Select Audio Track") },
+                text = {
+                    androidx.compose.foundation.lazy.LazyColumn {
+                        audioTrackGroups.forEach { group ->
+                            for (trackIndex in 0 until group.length) {
+                                val isSelected = group.isTrackSelected(trackIndex)
+                                val trackName = group.getTrackFormat(trackIndex).language?.let { "Language: $it" }
+                                    ?: group.getTrackFormat(trackIndex).label
+                                    ?: "Audio Track ${trackIndex + 1}"
+                                
+                                item {
+                                    TextButton(
+                                        onClick = {
+                                            trackSelector.setParameters(
+                                                trackSelector.buildUponParameters()
+                                                    .setOverrideForType(
+                                                        androidx.media3.common.TrackSelectionOverride(
+                                                            group.mediaTrackGroup, trackIndex
+                                                        )
+                                                    )
+                                            )
+                                            showAudioDialog = false
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = trackName + if(isSelected) " (Selected)" else "",
+                                            color = if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.primary else androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Start,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showAudioDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            )
         }
     }
 }
